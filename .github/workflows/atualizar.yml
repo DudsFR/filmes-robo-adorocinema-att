@@ -1,0 +1,34 @@
+name: Atualizar planilha de filmes
+
+on:
+  schedule:
+    - cron: "0 9 * * *"   # todo dia às 6h da manhã (horário de Brasília)
+  workflow_dispatch:       # permite rodar na hora pelo botão "Run workflow"
+
+permissions:
+  contents: write          # deixa o robô salvar o filmes.csv atualizado
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar bibliotecas
+        run: pip install requests==2.32.3 beautifulsoup4==4.12.3
+
+      - name: Rodar o robô
+        run: python robo.py
+
+      - name: Salvar alterações
+        if: always()       # salva o que deu certo mesmo se algum filme falhou
+        run: |
+          git config user.name "robo-filmes"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add filmes.csv
+          [ -f controle.json ] && git add controle.json
+          git diff --cached --quiet || (git commit -m "Atualização automática $(date +%F)" && git push)
