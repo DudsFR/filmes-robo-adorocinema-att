@@ -131,7 +131,19 @@ def ler_planilha():
 
 
 def salvar_planilha(linhas):
-    linhas.sort(key=lambda l: ano_da_linha(l) or 9999)  # mantém a ordem dentro de cada ano
+    MESES_ABREV = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"]
+
+    def chave_ordem(linha):
+        ano = ano_da_linha(linha) or 9999
+        data = linha["Lançamento"].strip().lower()
+        m = re.match(r"(\d{1,2})/(\d{1,2})/\d{4}", data)
+        if m:
+            return (ano, int(m.group(2)), int(m.group(1)))
+        if data[:3] in MESES_ABREV:
+            return (ano, MESES_ABREV.index(data[:3]) + 1, 0)
+        return (ano, 13, 0)  # sem data: vai para o fim do ano
+
+    linhas.sort(key=chave_ordem)  # ano e, dentro do ano, data de lançamento
     with ARQUIVO.open("w", encoding="utf-8", newline="") as f:
         escritor = csv.DictWriter(f, fieldnames=COLUNAS, quoting=csv.QUOTE_MINIMAL)
         escritor.writeheader()
